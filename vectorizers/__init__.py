@@ -1,0 +1,4 @@
+from vectorizers.word2vec_vectorizer import Word2VecVectorizer
+from vectorizers.fasttext_vectorizer import FastTextVectorizer
+from vectorizers.glove_vectorizer import GloVeVectorizer
+from vectorizers.contextual_vectorizer import ContextualVectorizer

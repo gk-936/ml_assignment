@@ -1,1 +1,21 @@
-/.qodo
+# Environment
+.venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Project Specific
+.qodo/
+data/
+results/
+*.zip
+*.tar.gz
+*.txt
+!requirements.txt
+
+# OS
+.DS_Store
+Thumbs.db
