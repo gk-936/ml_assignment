@@ -9,8 +9,6 @@ __pycache__/
 
 # Project Specific
 .qodo/
-data/
-results/
 *.zip
 *.tar.gz
 *.txt

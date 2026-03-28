@@ -1,0 +1,62 @@
+[
+  {
+    "vectorizer": "word2vec",
+    "embedding_dim": 100,
+    "fit_time_s": 9.211,
+    "transform_time_s": 5.042,
+    "classifier_train_time_s": 0.175,
+    "accuracy": 0.871,
+    "precision": 0.8718,
+    "recall": 0.871,
+    "f1_macro": 0.8709,
+    "f1_weighted": 0.8709
+  },
+  {
+    "vectorizer": "fasttext",
+    "embedding_dim": 100,
+    "fit_time_s": 19.052,
+    "transform_time_s": 3.721,
+    "classifier_train_time_s": 0.174,
+    "accuracy": 0.8738,
+    "precision": 0.8749,
+    "recall": 0.8738,
+    "f1_macro": 0.8737,
+    "f1_weighted": 0.8737
+  },
+  {
+    "vectorizer": "glove",
+    "embedding_dim": 100,
+    "fit_time_s": 10.162,
+    "transform_time_s": 1.714,
+    "classifier_train_time_s": 0.13,
+    "accuracy": 0.8498,
+    "precision": 0.8507,
+    "recall": 0.8498,
+    "f1_macro": 0.8497,
+    "f1_weighted": 0.8497
+  },
+  {
+    "vectorizer": "distilbert",
+    "embedding_dim": 768,
+    "fit_time_s": 5.543,
+    "transform_time_s": 56.665,
+    "classifier_train_time_s": 1.818,
+    "accuracy": 0.907,
+    "precision": 0.9071,
+    "recall": 0.907,
+    "f1_macro": 0.907,
+    "f1_weighted": 0.907
+  },
+  {
+    "vectorizer": "roberta",
+    "embedding_dim": 768,
+    "fit_time_s": 2.638,
+    "transform_time_s": 105.066,
+    "classifier_train_time_s": 0.872,
+    "accuracy": 0.9067,
+    "precision": 0.9068,
+    "recall": 0.9067,
+    "f1_macro": 0.9067,
+    "f1_weighted": 0.9067
+  }
+]
