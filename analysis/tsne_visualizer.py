@@ -11,6 +11,7 @@ Usage: python analysis/tsne_visualizer.py
 import os
 import sys
 import time
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -26,15 +27,14 @@ from vectorizers.fasttext_vectorizer import FastTextVectorizer
 from vectorizers.glove_vectorizer    import GloVeVectorizer
 from vectorizers.contextual_vectorizer     import ContextualVectorizer
 
-DATA_PATH  = os.path.join(PROJECT_ROOT, "data", "processed", "jigsaw_binary.csv")
-PLOTS_DIR  = os.path.join(PROJECT_ROOT, "results", "plots")
+PLOTS_ROOT  = os.path.join(PROJECT_ROOT, "results", "plots")
 
 # Use a smaller subset just for t-SNE — it's O(n²) in memory
 TSNE_SAMPLES    = 2_000
 RANDOM_STATE    = 42
 TSNE_PERPLEXITY = 40
 
-PALETTE = {0: "#4C72B0", 1: "#C44E52"}   # blue = non-toxic, red = toxic
+PALETTE_COLORS = {0: "#4C72B0", 1: "#C44E52"}
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans",
@@ -46,9 +46,13 @@ plt.rcParams.update({
 def load_subset(path, n=TSNE_SAMPLES):
     # load equal samples from each class for t-SNE
     df = pd.read_csv(path)
+    # Ensure there are enough samples
+    counts = df["label"].value_counts()
+    n_per_class = min(n // 2, counts.min())
+    
     return (
         df.groupby("label")
-          .sample(n=n // 2, random_state=RANDOM_STATE)
+          .sample(n=n_per_class, random_state=RANDOM_STATE)
           .sample(frac=1, random_state=RANDOM_STATE)
           .reset_index(drop=True)
     )
@@ -68,15 +72,15 @@ def compute_tsne(vectors: np.ndarray) -> np.ndarray:
     return tsne.fit_transform(vectors)
 
 
-def plot_tsne(embedded, labels, title, out_path):
+def plot_tsne(embedded, labels, title, out_path, target_labels):
     """Save a scatter plot of the 2D embeddings coloured by class."""
     fig, ax = plt.subplots(figsize=(7, 6))
-    for cls, color in PALETTE.items():
+    for cls, color in PALETTE_COLORS.items():
         mask = labels == cls
         ax.scatter(
             embedded[mask, 0], embedded[mask, 1],
             c=color, s=8, alpha=0.5,
-            label=["Non-toxic", "Toxic"][cls],
+            label=target_labels[cls],
         )
     ax.set_title(f"t-SNE: {title}", fontsize=12, fontweight="bold", pad=10)
     ax.set_xticks([]); ax.set_yticks([])
@@ -87,14 +91,34 @@ def plot_tsne(embedded, labels, title, out_path):
     print(f"  Saved: {out_path}")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="t-SNE visualization")
+    parser.add_argument(
+        "--dataset", choices=["jigsaw", "steam"], default="jigsaw",
+        help="Which dataset to visualize (jigsaw or steam)"
+    )
+    return parser.parse_args()
+
+
 def main():
-    if not os.path.exists(DATA_PATH):
-        raise FileNotFoundError(f"Dataset not found at {DATA_PATH}. Run prepare_dataset.py first.")
+    args = parse_args()
+    
+    if args.dataset == "jigsaw":
+        data_path = os.path.join(PROJECT_ROOT, "data", "processed", "jigsaw_binary.csv")
+        target_labels = ["Non-toxic", "Toxic"]
+    else:  # steam
+        data_path = os.path.join(PROJECT_ROOT, "data", "processed", "steam_binary.csv")
+        target_labels = ["Negative", "Positive"]
 
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    if not os.path.exists(data_path):
+        prep_script = "data/prepare_dataset.py" if args.dataset == "jigsaw" else "data/scrape_steam.py"
+        raise FileNotFoundError(f"Dataset not found at {data_path}. Run python {prep_script} first.")
 
-    print(f"Loading {TSNE_SAMPLES}-sample subset for t-SNE …")
-    df     = load_subset(DATA_PATH)
+    plots_dir = os.path.join(PLOTS_ROOT, args.dataset)
+    os.makedirs(plots_dir, exist_ok=True)
+
+    print(f"Loading subset from {args.dataset.upper()} for t-SNE …")
+    df     = load_subset(data_path)
     texts  = df["text"].tolist()
     labels = df["label"].values
 
@@ -112,18 +136,18 @@ def main():
         print(f"{'='*50}")
         vectors  = vec.fit(texts).transform(texts)
         embedded = compute_tsne(vectors)
-        out_path = os.path.join(PLOTS_DIR, f"tsne_{name.lower()}.png")
-        plot_tsne(embedded, labels, title=name, out_path=out_path)
+        out_path = os.path.join(plots_dir, f"tsne_{name.lower()}.png")
+        plot_tsne(embedded, labels, title=name, out_path=out_path, target_labels=target_labels)
 
     # stitch individual plots into one combined figure
     print("\nGenerating combined 2×2 t-SNE figure …")
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     axes      = axes.flatten()
     tsne_files = [
-        ("Word2Vec", os.path.join(PLOTS_DIR, "tsne_word2vec.png")),
-        ("FastText", os.path.join(PLOTS_DIR, "tsne_fasttext.png")),
-        ("GloVe",    os.path.join(PLOTS_DIR, "tsne_glove.png")),
-        ("BERT",     os.path.join(PLOTS_DIR, "tsne_bert.png")),
+        ("Word2Vec", os.path.join(plots_dir, "tsne_word2vec.png")),
+        ("FastText", os.path.join(plots_dir, "tsne_fasttext.png")),
+        ("GloVe",    os.path.join(plots_dir, "tsne_glove.png")),
+        ("BERT",     os.path.join(plots_dir, "tsne_bert.png")),
     ]
     import matplotlib.image as mpimg
     for ax, (name, fpath) in zip(axes, tsne_files):
@@ -132,9 +156,9 @@ def main():
             ax.set_title(name, fontsize=13, fontweight="bold")
         ax.axis("off")
 
-    fig.suptitle("t-SNE Embedding Spaces: Toxic vs Non-Toxic",
+    fig.suptitle(f"t-SNE Embedding Spaces: {args.dataset.capitalize()} Dataset",
                  fontsize=15, fontweight="bold", y=1.01)
-    out = os.path.join(PLOTS_DIR, "tsne_combined.png")
+    out = os.path.join(plots_dir, "tsne_combined.png")
     fig.tight_layout()
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)

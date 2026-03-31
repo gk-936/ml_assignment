@@ -1,0 +1,86 @@
+[
+  {
+    "vectorizer": "word2vec",
+    "embedding_dim": 100,
+    "fit_time_s": 7.882,
+    "transform_time_s": 2.427,
+    "classifier_train_time_s": 0.104,
+    "accuracy": 0.8698,
+    "precision": 0.8705,
+    "recall": 0.8698,
+    "f1_macro": 0.8697,
+    "f1_weighted": 0.8697
+  },
+  {
+    "vectorizer": "fasttext",
+    "embedding_dim": 100,
+    "fit_time_s": 16.12,
+    "transform_time_s": 4.432,
+    "classifier_train_time_s": 0.105,
+    "accuracy": 0.8742,
+    "precision": 0.8751,
+    "recall": 0.8742,
+    "f1_macro": 0.8742,
+    "f1_weighted": 0.8742
+  },
+  {
+    "vectorizer": "glove",
+    "embedding_dim": 100,
+    "fit_time_s": 11.292,
+    "transform_time_s": 1.959,
+    "classifier_train_time_s": 0.174,
+    "accuracy": 0.8498,
+    "precision": 0.8507,
+    "recall": 0.8498,
+    "f1_macro": 0.8497,
+    "f1_weighted": 0.8497
+  },
+  {
+    "vectorizer": "distilbert",
+    "embedding_dim": 768,
+    "fit_time_s": 3.941,
+    "transform_time_s": 55.333,
+    "classifier_train_time_s": 1.812,
+    "accuracy": 0.907,
+    "precision": 0.9071,
+    "recall": 0.907,
+    "f1_macro": 0.907,
+    "f1_weighted": 0.907
+  },
+  {
+    "vectorizer": "roberta",
+    "embedding_dim": 768,
+    "fit_time_s": 3.699,
+    "transform_time_s": 105.276,
+    "classifier_train_time_s": 0.877,
+    "accuracy": 0.9067,
+    "precision": 0.9068,
+    "recall": 0.9067,
+    "f1_macro": 0.9067,
+    "f1_weighted": 0.9067
+  },
+  {
+    "vectorizer": "bow",
+    "embedding_dim": 10000,
+    "fit_time_s": 2.605,
+    "transform_time_s": 2.353,
+    "classifier_train_time_s": 12.348,
+    "accuracy": 0.888,
+    "precision": 0.8892,
+    "recall": 0.888,
+    "f1_macro": 0.8879,
+    "f1_weighted": 0.8879
+  },
+  {
+    "vectorizer": "tfidf",
+    "embedding_dim": 10000,
+    "fit_time_s": 3.335,
+    "transform_time_s": 2.643,
+    "classifier_train_time_s": 1.442,
+    "accuracy": 0.8825,
+    "precision": 0.884,
+    "recall": 0.8825,
+    "f1_macro": 0.8824,
+    "f1_weighted": 0.8824
+  }
+]

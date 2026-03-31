@@ -54,6 +54,8 @@ from vectorizers.word2vec_vectorizer  import Word2VecVectorizer
 from vectorizers.fasttext_vectorizer  import FastTextVectorizer
 from vectorizers.glove_vectorizer     import GloVeVectorizer
 from vectorizers.contextual_vectorizer import ContextualVectorizer
+from vectorizers.bow_vectorizer        import BoWVectorizer
+from vectorizers.tfidf_vectorizer      import TFIDFVectorizer
 
 DATA_PATH    = os.path.join(PROJECT_ROOT, "data", "processed", "jigsaw_binary.csv")
 RESULTS_PATH = os.path.join(PROJECT_ROOT, "results", "benchmark_results.json")
@@ -67,6 +69,7 @@ TEST_SIZE    = 0.20
 
 def load_data(path: str):
     df = pd.read_csv(path)
+    # Ensure columns exist; Steam uses 'text' and 'label' as well.
     return df["text"].tolist(), df["label"].tolist()
 
 
@@ -87,6 +90,7 @@ def run_vectorizer(
     X_test: List[str],
     y_train: List[int],
     y_test: List[int],
+    target_names: List[str],
 ) -> Dict[str, Any]:
     print(f"\n{'='*60}")
     print(f"  Running: {name}")
@@ -121,7 +125,7 @@ def run_vectorizer(
     metrics = evaluate(y_test, y_pred)
 
     print(f"\n  Classification report:\n")
-    print(classification_report(y_test, y_pred, target_names=["non-toxic", "toxic"]))
+    print(classification_report(y_test, y_pred, target_names=target_names))
 
     return {
         "vectorizer"              : name,
@@ -140,10 +144,14 @@ def run_vectorizer(
 def parse_args():
     parser = argparse.ArgumentParser(description="Run word vectorizer benchmark")
     parser.add_argument(
+        "--dataset", choices=["jigsaw", "steam"], default="jigsaw",
+        help="Which dataset to use (jigsaw or steam)"
+    )
+    parser.add_argument(
         "--vectorizers", nargs="+",
-        choices=["word2vec", "fasttext", "glove", "distilbert", "roberta"],
-        default=["word2vec", "fasttext", "glove", "distilbert", "roberta"],
-        help="Which vectorizers to run (default: all five)",
+        choices=["word2vec", "fasttext", "glove", "distilbert", "roberta", "bow", "tfidf"],
+        default=["word2vec", "fasttext", "glove", "distilbert", "roberta", "bow", "tfidf"],
+        help="Which vectorizers to run (default: all seven)",
     )
     return parser.parse_args()
 
@@ -155,6 +163,8 @@ def build_vectorizers(names: List[str]):
         "glove"     : lambda: GloVeVectorizer(vector_size=100),
         "distilbert": lambda: ContextualVectorizer(model_name="distilbert", batch_size=32, max_length=128),
         "roberta"   : lambda: ContextualVectorizer(model_name="roberta",    batch_size=32, max_length=128),
+        "bow"       : lambda: BoWVectorizer(max_features=10000),
+        "tfidf"     : lambda: TFIDFVectorizer(max_features=10000),
     }
     return [(name, registry[name]()) for name in names]
 
@@ -162,16 +172,29 @@ def build_vectorizers(names: List[str]):
 def main():
     args = parse_args()
 
-    print("\n[run_benchmark] Loading dataset …")
-    if not os.path.exists(DATA_PATH):
+    # Dynamic paths and labels based on dataset
+    if args.dataset == "jigsaw":
+        data_path = os.path.join(PROJECT_ROOT, "data", "processed", "jigsaw_binary.csv")
+        results_path = os.path.join(PROJECT_ROOT, "results", f"benchmark_jigsaw.json")
+        target_names = ["non-toxic", "toxic"]
+    else:  # steam
+        data_path = os.path.join(PROJECT_ROOT, "data", "processed", "steam_binary.csv")
+        results_path = os.path.join(PROJECT_ROOT, "results", f"benchmark_steam.json")
+        target_names = ["negative", "positive"]
+
+    print(f"\n[run_benchmark] Dataset: {args.dataset.upper()}")
+    print(f"[run_benchmark] Loading dataset …")
+    
+    if not os.path.exists(data_path):
+        prep_script = "data/prepare_dataset.py" if args.dataset == "jigsaw" else "data/scrape_steam.py"
         raise FileNotFoundError(
-            f"Processed dataset not found at {DATA_PATH}.\n"
-            "Run  python data/prepare_dataset.py  first."
+            f"Processed dataset not found at {data_path}.\n"
+            f"Run  python {prep_script}  first."
         )
 
-    texts, labels = load_data(DATA_PATH)
+    texts, labels = load_data(data_path)
     print(f"  Total samples: {len(texts):,}")
-    print(f"  Toxic        : {sum(labels):,}  ({sum(labels)/len(labels):.1%})")
+    print(f"  Positive/Toxic: {sum(labels):,}  ({sum(labels)/len(labels):.1%})")
 
     X_train, X_test, y_train, y_test = train_test_split(
         texts, labels,
@@ -185,13 +208,13 @@ def main():
 
     all_results = []
     for name, vec in vectorizers:
-        result = run_vectorizer(name, vec, X_train, X_test, y_train, y_test)
+        result = run_vectorizer(name, vec, X_train, X_test, y_train, y_test, target_names)
         all_results.append(result)
 
-    os.makedirs(os.path.dirname(RESULTS_PATH), exist_ok=True)
-    with open(RESULTS_PATH, "w") as f:
+    os.makedirs(os.path.dirname(results_path), exist_ok=True)
+    with open(results_path, "w") as f:
         json.dump(all_results, f, indent=2)
-    print(f"\n[run_benchmark] Results saved → {RESULTS_PATH}")
+    print(f"\n[run_benchmark] Results saved → {results_path}")
 
     # Summary table
     print("\n" + "="*72)
